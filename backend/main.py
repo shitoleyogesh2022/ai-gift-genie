@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from pathlib import Path
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
@@ -50,9 +53,16 @@ class MessageRequest(BaseModel):
     gift_context: Optional[str] = None
     special_message: Optional[str] = None
 
-@app.get("/")
+@app.get("/api")
 async def root():
     return {"message": "🎄 AI Christmas Gift Generator API", "status": "running"}
+
+@app.get("/")
+async def serve_frontend():
+    frontend_path = Path(__file__).parent.parent / "frontend" / "genz.html"
+    if frontend_path.exists():
+        return FileResponse(frontend_path)
+    return {"error": "Frontend not found"}
 
 @app.get("/list-models")
 async def list_models():
