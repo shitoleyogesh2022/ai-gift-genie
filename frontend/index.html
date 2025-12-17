@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎄 AI Christmas Gift Generator</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .snow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: white;
+            font-size: 1em;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeIn 1s;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.8s;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            font-size: 1.1em;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .interests-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .interest-tag {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #667eea;
+        }
+
+        .interest-tag:hover {
+            background: #764ba2;
+            border-color: #764ba2;
+        }
+
+        .interest-tag.selected {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+
+        .btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .gift-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s;
+            border-left: 5px solid #667eea;
+        }
+
+        .gift-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+
+        .gift-card p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .gift-card .price {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .message-card {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 20px;
+            animation: fadeIn 0.5s;
+            border: 3px solid #ff9a76;
+        }
+
+        .message-card h3 {
+            color: #d63031;
+            margin-bottom: 15px;
+        }
+
+        .message-card p {
+            color: #2d3436;
+            font-size: 1.1em;
+            line-height: 1.8;
+            font-style: italic;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="snow" id="snow"></div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const API_URL = 'http://localhost:8003';
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('gifts');
+            const [loading, setLoading] = useState(false);
+            const [gifts, setGifts] = useState([]);
+            const [message, setMessage] = useState('');
+            
+            // Gift form state
+            const [giftForm, setGiftForm] = useState({
+                recipient_name: '',
+                age: '',
+                gender: '',
+                relationship: 'friend',
+                interests: [],
+                budget_min: '',
+                budget_max: '',
+                occasion: 'Christmas',
+                personality: '',
+                special_notes: ''
+            });
+
+            // Message form state
+            const [messageForm, setMessageForm] = useState({
+                recipient_name: '',
+                relationship: 'friend',
+                occasion: 'Christmas',
+                tone: 'warm',
+                gift_context: '',
+                special_message: ''
+            });
+
+            const interestOptions = [
+                'Technology', 'Reading', 'Sports', 'Music', 'Art', 'Cooking',
+                'Travel', 'Gaming', 'Fashion', 'Fitness', 'Photography', 'Gardening'
+            ];
+
+            useEffect(() => {
+                createSnowflakes();
+            }, []);
+
+            const createSnowflakes = () => {
+                const snow = document.getElementById('snow');
+                for (let i = 0; i < 50; i++) {
+                    const snowflake = document.createElement('div');
+                    snowflake.className = 'snowflake';
+                    snowflake.innerHTML = '❄';
+                    snowflake.style.left = Math.random() * 100 + '%';
+                    snowflake.style.animationDuration = Math.random() * 3 + 2 + 's';
+                    snowflake.style.opacity = Math.random();
+                    snowflake.style.fontSize = Math.random() * 10 + 10 + 'px';
+                    snow.appendChild(snowflake);
+                }
+            };
+
+            const toggleInterest = (interest) => {
+                setGiftForm(prev => ({
+                    ...prev,
+                    interests: prev.interests.includes(interest)
+                        ? prev.interests.filter(i => i !== interest)
+                        : [...prev.interests, interest]
+                }));
+            };
+
+            const handleGenerateGifts = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setGifts([]);
+
+                try {
+                    const response = await fetch(`${API_URL}/generate-gifts`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...giftForm,
+                            age: giftForm.age ? parseInt(giftForm.age) : null,
+                            budget_min: giftForm.budget_min ? parseFloat(giftForm.budget_min) : null,
+                            budget_max: giftForm.budget_max ? parseFloat(giftForm.budget_max) : null
+                        })
+                    });
+
+                    const data = await response.json();
+                    setGifts(data.gifts);
+                } catch (error) {
+                    alert('Error generating gifts: ' + error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleGenerateMessage = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setMessage('');
+
+                try {
+                    const response = await fetch(`${API_URL}/generate-message`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(messageForm)
+                    });
+
+                    const data = await response.json();
+                    setMessage(data.message);
+                } catch (error) {
+                    alert('Error generating message: ' + error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>🎄 AI Christmas Gift Generator 🎁</h1>
+                        <p>Find the perfect gift and craft heartfelt messages with AI</p>
+                    </div>
+
+                    <div className="main-card">
+                        <div className="tabs">
+                            <button 
+                                className={`tab ${activeTab === 'gifts' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('gifts')}
+                            >
+                                🎁 Gift Ideas
+                            </button>
+                            <button 
+                                className={`tab ${activeTab === 'message' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('message')}
+                            >
+                                💌 Message Generator
+                            </button>
+                        </div>
+
+                        {activeTab === 'gifts' && (
+                            <form onSubmit={handleGenerateGifts}>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Recipient Name *</label>
+                                        <input 
+                                            type="text" 
+                                            required
+                                            value={giftForm.recipient_name}
+                                            onChange={(e) => setGiftForm({...giftForm, recipient_name: e.target.value})}
+                                            placeholder="e.g., Sarah"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Age</label>
+                                        <input 
+                                            type="number"
+                                            value={giftForm.age}
+                                            onChange={(e) => setGiftForm({...giftForm, age: e.target.value})}
+                                            placeholder="e.g., 25"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Gender</label>
+                                        <select 
+                                            value={giftForm.gender}
+                                            onChange={(e) => setGiftForm({...giftForm, gender: e.target.value})}
+                                        >
+                                            <option value="">Prefer not to say</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Relationship *</label>
+                                        <select 
+                                            required
+                                            value={giftForm.relationship}
+                                            onChange={(e) => setGiftForm({...giftForm, relationship: e.target.value})}
+                                        >
+                                            <option value="friend">Friend</option>
+                                            <option value="family">Family</option>
+                                            <option value="colleague">Colleague</option>
+                                            <option value="partner">Partner</option>
+                                            <option value="parent">Parent</option>
+                                            <option value="sibling">Sibling</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Interests (Select multiple)</label>
+                                    <div className="interests-container">
+                                        {interestOptions.map(interest => (
+                                            <div 
+                                                key={interest}
+                                                className={`interest-tag ${giftForm.interests.includes(interest) ? 'selected' : ''}`}
+                                                onClick={() => toggleInterest(interest)}
+                                            >
+                                                {interest}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Budget Min ($)</label>
+                                        <input 
+                                            type="number"
+                                            value={giftForm.budget_min}
+                                            onChange={(e) => setGiftForm({...giftForm, budget_min: e.target.value})}
+                                            placeholder="e.g., 20"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Budget Max ($)</label>
+                                        <input 
+                                            type="number"
+                                            value={giftForm.budget_max}
+                                            onChange={(e) => setGiftForm({...giftForm, budget_max: e.target.value})}
+                                            placeholder="e.g., 100"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Occasion</label>
+                                    <select 
+                                        value={giftForm.occasion}
+                                        onChange={(e) => setGiftForm({...giftForm, occasion: e.target.value})}
+                                    >
+                                        <option value="Christmas">Christmas</option>
+                                        <option value="New Year">New Year</option>
+                                        <option value="Both">Both Christmas & New Year</option>
+                                    </select>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Personality</label>
+                                    <input 
+                                        type="text"
+                                        value={giftForm.personality}
+                                        onChange={(e) => setGiftForm({...giftForm, personality: e.target.value})}
+                                        placeholder="e.g., adventurous, creative, practical"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Special Notes</label>
+                                    <textarea 
+                                        rows="3"
+                                        value={giftForm.special_notes}
+                                        onChange={(e) => setGiftForm({...giftForm, special_notes: e.target.value})}
+                                        placeholder="Any additional information..."
+                                    />
+                                </div>
+
+                                <button type="submit" className="btn" disabled={loading}>
+                                    {loading ? 'Generating...' : '🎁 Generate Gift Ideas'}
+                                </button>
+                            </form>
+                        )}
+
+                        {activeTab === 'message' && (
+                            <form onSubmit={handleGenerateMessage}>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Recipient Name *</label>
+                                        <input 
+                                            type="text" 
+                                            required
+                                            value={messageForm.recipient_name}
+                                            onChange={(e) => setMessageForm({...messageForm, recipient_name: e.target.value})}
+                                            placeholder="e.g., John"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Relationship *</label>
+                                        <select 
+                                            required
+                                            value={messageForm.relationship}
+                                            onChange={(e) => setMessageForm({...messageForm, relationship: e.target.value})}
+                                        >
+                                            <option value="friend">Friend</option>
+                                            <option value="family">Family</option>
+                                            <option value="colleague">Colleague</option>
+                                            <option value="partner">Partner</option>
+                                            <option value="parent">Parent</option>
+                                            <option value="sibling">Sibling</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Occasion</label>
+                                        <select 
+                                            value={messageForm.occasion}
+                                            onChange={(e) => setMessageForm({...messageForm, occasion: e.target.value})}
+                                        >
+                                            <option value="Christmas">Christmas</option>
+                                            <option value="New Year">New Year</option>
+                                            <option value="Both">Both</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Tone</label>
+                                        <select 
+                                            value={messageForm.tone}
+                                            onChange={(e) => setMessageForm({...messageForm, tone: e.target.value})}
+                                        >
+                                            <option value="warm">Warm & Friendly</option>
+                                            <option value="funny">Funny & Playful</option>
+                                            <option value="formal">Formal & Professional</option>
+                                            <option value="heartfelt">Heartfelt & Emotional</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Gift Context (Optional)</label>
+                                    <input 
+                                        type="text"
+                                        value={messageForm.gift_context}
+                                        onChange={(e) => setMessageForm({...messageForm, gift_context: e.target.value})}
+                                        placeholder="e.g., I'm giving them a book"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Special Message (Optional)</label>
+                                    <textarea 
+                                        rows="3"
+                                        value={messageForm.special_message}
+                                        onChange={(e) => setMessageForm({...messageForm, special_message: e.target.value})}
+                                        placeholder="Any specific wishes or memories to include..."
+                                    />
+                                </div>
+
+                                <button type="submit" className="btn" disabled={loading}>
+                                    {loading ? 'Generating...' : '💌 Generate Message'}
+                                </button>
+                            </form>
+                        )}
+
+                        {loading && (
+                            <div className="loading">
+                                <div className="spinner"></div>
+                                <p>Creating something special...</p>
+                            </div>
+                        )}
+
+                        {!loading && gifts.length > 0 && (
+                            <div className="results">
+                                <h2>🎁 Perfect Gift Ideas for {giftForm.recipient_name}</h2>
+                                {gifts.map((gift, index) => (
+                                    <div key={index} className="gift-card">
+                                        <h3>{gift.name}</h3>
+                                        <p><strong>Description:</strong> {gift.description}</p>
+                                        <p><strong>Why it's perfect:</strong> {gift.reason}</p>
+                                        <p className="price">💰 {gift.price_range}</p>
+                                        <p><strong>Where to buy:</strong> {gift.where_to_buy}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {!loading && message && (
+                            <div className="message-card">
+                                <h3>💌 Your Personalized Message</h3>
+                                <p>{message}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

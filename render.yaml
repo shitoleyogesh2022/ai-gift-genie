@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: ai-gift-genie-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GOOGLE_API_KEY
+        sync: false
+  
+  - type: static
+    name: ai-gift-genie-frontend
+    staticPublishPath: ./frontend
+    buildCommand: echo "No build needed"
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /genz.html
