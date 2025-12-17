@@ -39,7 +39,8 @@
 
 5. **Add Environment Variable**:
    - Click "Environment" tab
-   - Add: `GOOGLE_API_KEY` = `AIzaSyCROCPU1xhLcVgkXWpSE1XIQdgw1c2KK6c`
+   - Add: `GOOGLE_API_KEY` = `your_api_key_here`
+   - Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
 
 6. **Click "Create Web Service"**
 
