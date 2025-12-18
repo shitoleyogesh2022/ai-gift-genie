@@ -9,6 +9,7 @@ import os
 from dotenv import load_dotenv
 from typing import List, Optional
 import warnings
+from datetime import datetime
 
 # Suppress deprecation warning
 warnings.filterwarnings('ignore', category=FutureWarning)
@@ -58,12 +59,14 @@ class MessageRequest(BaseModel):
 free_messages_used = 0
 MAX_FREE_MESSAGES = 3
 
-# Sample messages for free users
-SAMPLE_MESSAGES = [
-    "Wishing you a Christmas filled with joy, laughter, and all the warmth of the season! May your holidays sparkle with happiness and your New Year be bright with new possibilities. 🎄✨",
-    "May this Christmas bring you peace, love, and countless moments of joy with those who matter most. Here's to a wonderful holiday season and an amazing year ahead! 🎅🎁",
-    "Sending warm Christmas wishes your way! May your heart be light, your days be merry, and your celebrations be filled with love and laughter. Happy holidays! ❄️💕"
-]
+# Sample messages for free users (dynamic year)
+def get_sample_messages():
+    next_year = datetime.now().year + 1
+    return [
+        f"Wishing you a Christmas filled with joy, laughter, and all the warmth of the season! May your holidays sparkle with happiness and your {next_year} be bright with new possibilities. 🎄✨",
+        f"May this Christmas bring you peace, love, and countless moments of joy with those who matter most. Here's to a wonderful holiday season and an amazing {next_year} ahead! 🎅🎁",
+        f"Sending warm Christmas wishes your way! May your heart be light, your days be merry, and your celebrations be filled with love and laughter. Happy holidays and a fantastic {next_year}! ❄️💕"
+    ]
 
 @app.get("/api")
 async def root():
@@ -194,7 +197,7 @@ async def generate_message(request: MessageRequest):
                 "message": None,
                 "recipient": request.recipient_name,
                 "requires_subscription": True,
-                "sample_messages": SAMPLE_MESSAGES,
+                "sample_messages": get_sample_messages(),
                 "free_messages_used": free_messages_used,
                 "max_free_messages": MAX_FREE_MESSAGES
             }
@@ -202,7 +205,8 @@ async def generate_message(request: MessageRequest):
         # For free users, return sample message
         if not request.is_premium:
             free_messages_used += 1
-            sample_message = SAMPLE_MESSAGES[min(free_messages_used - 1, len(SAMPLE_MESSAGES) - 1)]
+            sample_messages = get_sample_messages()
+            sample_message = sample_messages[min(free_messages_used - 1, len(sample_messages) - 1)]
             return {
                 "message": sample_message,
                 "recipient": request.recipient_name,
@@ -213,13 +217,26 @@ async def generate_message(request: MessageRequest):
         
         # Premium users get AI-generated messages
         print(f"Generating AI message for {request.recipient_name}...")
+        current_year = datetime.now().year
+        next_year = current_year + 1
+        current_month = datetime.now().month
+        
+        # Smart context based on timing
+        if current_month == 12:  # December
+            time_context = f"It's December {current_year}, Christmas is here/approaching, and {next_year} is just around the corner."
+        elif current_month == 1:  # January
+            time_context = f"It's January {current_year}, the new year has just begun, and we're reflecting on the holidays."
+        else:
+            time_context = f"It's {current_year}, and we're looking forward to the upcoming holiday season and {next_year}."
+        
         prompt = f"""Write a {request.tone} {request.occasion} message for {request.recipient_name}.
         
 Relationship: {request.relationship}
 Gift context: {request.gift_context or 'None'}
 Special note: {request.special_message or 'None'}
+Timing context: {time_context}
 
-Write a warm, personal message (2-4 sentences). Just the message, no quotes."""
+Use appropriate tense and timing references. Write a warm, personal message (2-4 sentences). Just the message, no quotes."""
         
         print("Calling Gemini API...")
         response = model.generate_content(prompt)
