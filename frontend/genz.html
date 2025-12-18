@@ -85,8 +85,9 @@
         .tabs-container {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             margin-bottom: 30px;
+            flex-wrap: wrap;
         }
         
         .tab-btn {
@@ -720,6 +721,36 @@
                 sample_messages: []
             });
             
+            const [santaForm, setSantaForm] = useState({ names: '' });
+            const [santaResults, setSantaResults] = useState([]);
+            
+            const [partyForm, setPartyForm] = useState({
+                occasion: 'Christmas', guest_count: '', budget: '', venue_type: 'home',
+                theme: '', dietary_restrictions: '', age_group: 'mixed'
+            });
+            const [partyPlan, setPartyPlan] = useState('');
+            
+            const [budgetForm, setBudgetForm] = useState({
+                total_budget: '', currency: 'USD', items: []
+            });
+            const [budgetData, setBudgetData] = useState(null);
+            
+            const [captionForm, setCaptionForm] = useState({
+                photo_description: '', occasion: 'Christmas', tone: 'fun', hashtags: true
+            });
+            const [generatedCaption, setGeneratedCaption] = useState('');
+            
+            const [wishlistForm, setWishlistForm] = useState({
+                title: '', items: [''], recipient_name: '', occasion: 'Christmas', privacy: 'public'
+            });
+            const [wishlistData, setWishlistData] = useState(null);
+            
+            const [cardForm, setCardForm] = useState({
+                occasion: 'Christmas', recipient_name: '', sender_name: '', relationship: 'friend',
+                tone: 'warm', custom_message: '', card_style: 'classic'
+            });
+            const [cardContent, setCardContent] = useState('');
+            
             const currencies = {
                 'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥',
                 'AUD': 'A$', 'CAD': 'C$', 'CNY': '¥', 'AED': 'د.إ'
@@ -789,6 +820,191 @@
                     alert('✨ Free messages reset! You can now generate 3 more messages.');
                 } catch (error) {
                     console.error('Reset failed:', error);
+                }
+            };
+            
+            const handleSecretSanta = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setSantaResults([]);
+                try {
+                    const names = santaForm.names.split('\n').map(n => n.trim()).filter(n => n);
+                    if (names.length < 2) {
+                        alert('Please enter at least 2 names');
+                        return;
+                    }
+                    
+                    const response = await fetch(`${API_URL}/secret-santa`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ names })
+                    });
+                    const data = await response.json();
+                    setSantaResults(data.assignments);
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const shareSantaResults = (platform) => {
+                const resultText = santaResults.map(r => `🎅 ${r.giver} → ${r.receiver}`).join('\n');
+                const appAd = "\n\n✨ Secret Santa assignments generated using AI Gift Genie - Get yours for free at ai-gift-genie.onrender.com! 🎁";
+                const fullText = `🎄 Secret Santa Assignments:\n\n${resultText}${appAd}`;
+                const text = encodeURIComponent(fullText);
+                
+                const urls = {
+                    whatsapp: `https://wa.me/?text=${text}`,
+                    facebook: `https://www.facebook.com/sharer/sharer.php?quote=${text}`,
+                    twitter: `https://twitter.com/intent/tweet?text=${text}`,
+                    telegram: `https://t.me/share/url?text=${text}`
+                };
+                
+                if (platform === 'copy') {
+                    navigator.clipboard.writeText(fullText);
+                    alert('Secret Santa results copied! 📋');
+                } else {
+                    window.open(urls[platform], '_blank');
+                }
+            };
+            
+            const handlePartyPlanner = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setPartyPlan('');
+                try {
+                    const response = await fetch(`${API_URL}/party-planner`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...partyForm,
+                            guest_count: parseInt(partyForm.guest_count),
+                            budget: partyForm.budget ? parseFloat(partyForm.budget) : null
+                        })
+                    });
+                    const data = await response.json();
+                    setPartyPlan(data.party_plan);
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const handlePhotoCaption = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setGeneratedCaption('');
+                try {
+                    const response = await fetch(`${API_URL}/photo-caption`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(captionForm)
+                    });
+                    const data = await response.json();
+                    setGeneratedCaption(data.caption);
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const addWishlistItem = () => {
+                setWishlistForm(prev => ({
+                    ...prev,
+                    items: [...prev.items, '']
+                }));
+            };
+            
+            const handleCreateWishlist = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setWishlistData(null);
+                try {
+                    const filteredItems = wishlistForm.items.filter(item => item.trim());
+                    if (filteredItems.length === 0) {
+                        alert('Please add at least one item to your wishlist');
+                        return;
+                    }
+                    
+                    const response = await fetch(`${API_URL}/create-wishlist`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...wishlistForm,
+                            items: filteredItems
+                        })
+                    });
+                    const data = await response.json();
+                    setWishlistData(data);
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const addBudgetItem = () => {
+                setBudgetForm(prev => ({
+                    ...prev,
+                    items: [...prev.items, { name: '', category: 'gifts', planned_amount: 0, actual_amount: 0, recipient: '' }]
+                }));
+            };
+            
+            const calculateBudget = async () => {
+                setLoading(true);
+                setBudgetData(null);
+                try {
+                    const validItems = budgetForm.items.filter(item => item.name && item.planned_amount > 0);
+                    if (validItems.length === 0) {
+                        alert('Please add at least one budget item with a planned amount');
+                        return;
+                    }
+                    
+                    const response = await fetch(`${API_URL}/budget-tracker`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...budgetForm,
+                            total_budget: parseFloat(budgetForm.total_budget),
+                            items: validItems
+                        })
+                    });
+                    const data = await response.json();
+                    setBudgetData(data);
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const handleGenerateCard = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setCardContent('');
+                try {
+                    console.log('Sending card request:', cardForm);
+                    const response = await fetch(`${API_URL}/generate-card`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(cardForm)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Card response:', data);
+                    setCardContent(data.card_content);
+                } catch (error) {
+                    console.error('Card generation error:', error);
+                    alert('Error generating card: ' + error.message);
+                } finally {
+                    setLoading(false);
                 }
             };
 
@@ -887,6 +1103,36 @@
                                 onClick={() => setActiveTab('message')}>
                                 💌 Message Maker
                             </button>
+                            <button 
+                                className={`tab-btn ${activeTab === 'santa' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('santa')}>
+                                🎅 Secret Santa
+                            </button>
+                            <button 
+                                className={`tab-btn ${activeTab === 'party' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('party')}>
+                                🎉 Party Planner
+                            </button>
+                            <button 
+                                className={`tab-btn ${activeTab === 'budget' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('budget')}>
+                                💰 Budget Tracker
+                            </button>
+                            <button 
+                                className={`tab-btn ${activeTab === 'caption' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('caption')}>
+                                📸 Photo Captions
+                            </button>
+                            <button 
+                                className={`tab-btn ${activeTab === 'wishlist' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('wishlist')}>
+                                📋 Wishlist
+                            </button>
+                            <button 
+                                className={`tab-btn ${activeTab === 'card' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('card')}>
+                                💌 Card Maker
+                            </button>
                         </div>
                         
                         <div className="main-grid">
@@ -984,6 +1230,329 @@
                                         {loading ? '✨ Generating Magic...' : '🎁 Find Perfect Gifts'}
                                     </button>
                                 </form>
+                            </div>}
+                            {activeTab === 'party' && <div className="card">
+                                <div className="card-header">
+                                    <div className="card-icon">🎉</div>
+                                    <div className="card-title">AI Party Planner</div>
+                                </div>
+                                <form onSubmit={handlePartyPlanner}>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>🎄 Occasion</label>
+                                            <select value={partyForm.occasion} onChange={(e) => setPartyForm({...partyForm, occasion: e.target.value})}>
+                                                <option value="Christmas">Christmas 🎄</option>
+                                                <option value="New Year">New Year 🎆</option>
+                                                <option value="Birthday">Birthday 🎂</option>
+                                                <option value="Holiday Party">Holiday Party 🎉</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>👥 Guest Count</label>
+                                            <input type="number" required value={partyForm.guest_count}
+                                                onChange={(e) => setPartyForm({...partyForm, guest_count: e.target.value})}
+                                                placeholder="10" />
+                                        </div>
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>💰 Budget (Optional)</label>
+                                            <input type="number" value={partyForm.budget}
+                                                onChange={(e) => setPartyForm({...partyForm, budget: e.target.value})}
+                                                placeholder="500" />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>🏠 Venue Type</label>
+                                            <select value={partyForm.venue_type} onChange={(e) => setPartyForm({...partyForm, venue_type: e.target.value})}>
+                                                <option value="home">Home 🏠</option>
+                                                <option value="restaurant">Restaurant 🍽️</option>
+                                                <option value="outdoor">Outdoor 🌳</option>
+                                                <option value="hall">Event Hall 🏢</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>🎨 Theme (Optional)</label>
+                                            <input type="text" value={partyForm.theme}
+                                                onChange={(e) => setPartyForm({...partyForm, theme: e.target.value})}
+                                                placeholder="Winter Wonderland" />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>👥 Age Group</label>
+                                            <select value={partyForm.age_group} onChange={(e) => setPartyForm({...partyForm, age_group: e.target.value})}>
+                                                <option value="kids">Kids 🧒</option>
+                                                <option value="adults">Adults 👨</option>
+                                                <option value="mixed">Mixed Ages 👪</option>
+                                                <option value="seniors">Seniors 👴</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>🍽️ Dietary Restrictions (Optional)</label>
+                                        <input type="text" value={partyForm.dietary_restrictions}
+                                            onChange={(e) => setPartyForm({...partyForm, dietary_restrictions: e.target.value})}
+                                            placeholder="Vegetarian, Gluten-free, etc." />
+                                    </div>
+                                    <button type="submit" className="generate-btn" disabled={loading}>
+                                        {loading ? '🎉 Planning Magic...' : '🎆 Create Party Plan'}
+                                    </button>
+                                </form>
+                            </div>}
+                            {activeTab === 'caption' && <div className="card">
+                                <div className="card-header">
+                                    <div className="card-icon">📸</div>
+                                    <div className="card-title">AI Photo Caption Generator</div>
+                                </div>
+                                <form onSubmit={handlePhotoCaption}>
+                                    <div className="form-group">
+                                        <label>🖼️ Describe Your Photo</label>
+                                        <textarea rows="3" required value={captionForm.photo_description}
+                                            onChange={(e) => setCaptionForm({...captionForm, photo_description: e.target.value})}
+                                            placeholder="Family gathered around Christmas tree, opening presents, everyone smiling..." />
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>🎄 Occasion</label>
+                                            <select value={captionForm.occasion} onChange={(e) => setCaptionForm({...captionForm, occasion: e.target.value})}>
+                                                <option value="Christmas">Christmas 🎄</option>
+                                                <option value="New Year">New Year 🎆</option>
+                                                <option value="Holiday">Holiday 🎉</option>
+                                                <option value="Family">Family Time 👪</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>🎭 Tone</label>
+                                            <select value={captionForm.tone} onChange={(e) => setCaptionForm({...captionForm, tone: e.target.value})}>
+                                                <option value="fun">Fun 😄</option>
+                                                <option value="heartfelt">Heartfelt 💕</option>
+                                                <option value="funny">Funny 😂</option>
+                                                <option value="elegant">Elegant ✨</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                                            <input type="checkbox" checked={captionForm.hashtags}
+                                                onChange={(e) => setCaptionForm({...captionForm, hashtags: e.target.checked})} />
+                                            🔖 Include Hashtags
+                                        </label>
+                                    </div>
+                                    <button type="submit" className="generate-btn" disabled={loading}>
+                                        {loading ? '📸 Crafting Caption...' : '✨ Generate Caption'}
+                                    </button>
+                                </form>
+                            </div>}
+                            {activeTab === 'wishlist' && <div className="card">
+                                <div className="card-header">
+                                    <div className="card-icon">📋</div>
+                                    <div className="card-title">Smart Wishlist Manager</div>
+                                </div>
+                                <form onSubmit={handleCreateWishlist}>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>🏷️ Wishlist Title</label>
+                                            <input type="text" required value={wishlistForm.title}
+                                                onChange={(e) => setWishlistForm({...wishlistForm, title: e.target.value})}
+                                                placeholder="My Christmas Wishlist 2025" />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>👤 For Whom</label>
+                                            <input type="text" required value={wishlistForm.recipient_name}
+                                                onChange={(e) => setWishlistForm({...wishlistForm, recipient_name: e.target.value})}
+                                                placeholder="John" />
+                                        </div>
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>🎄 Occasion</label>
+                                            <select value={wishlistForm.occasion} onChange={(e) => setWishlistForm({...wishlistForm, occasion: e.target.value})}>
+                                                <option value="Christmas">Christmas 🎄</option>
+                                                <option value="Birthday">Birthday 🎂</option>
+                                                <option value="New Year">New Year 🎆</option>
+                                                <option value="Holiday">Holiday 🎉</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>🔒 Privacy</label>
+                                            <select value={wishlistForm.privacy} onChange={(e) => setWishlistForm({...wishlistForm, privacy: e.target.value})}>
+                                                <option value="public">Public 🌍</option>
+                                                <option value="friends">Friends Only 👥</option>
+                                                <option value="private">Private 🔒</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>🎁 Wishlist Items</label>
+                                        {wishlistForm.items.map((item, index) => (
+                                            <input key={index} type="text" value={item}
+                                                onChange={(e) => {
+                                                    const newItems = [...wishlistForm.items];
+                                                    newItems[index] = e.target.value;
+                                                    setWishlistForm({...wishlistForm, items: newItems});
+                                                }}
+                                                placeholder={`Item ${index + 1} (e.g., iPhone 15, Nike Shoes)`}
+                                                style={{marginBottom: '10px'}} />
+                                        ))}
+                                        <button type="button" onClick={addWishlistItem} 
+                                            style={{padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer'}}>
+                                            ➕ Add Item
+                                        </button>
+                                    </div>
+                                    <button type="submit" className="generate-btn" disabled={loading}>
+                                        {loading ? '📋 Creating Wishlist...' : '✨ Create Smart Wishlist'}
+                                    </button>
+                                </form>
+                            </div>}
+                            {activeTab === 'card' && <div className="card">
+                                <div className="card-header">
+                                    <div className="card-icon">💌</div>
+                                    <div className="card-title">AI Card Designer</div>
+                                </div>
+                                <form onSubmit={handleGenerateCard}>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>🎄 Occasion</label>
+                                            <select value={cardForm.occasion} onChange={(e) => setCardForm({...cardForm, occasion: e.target.value})}>
+                                                <option value="Christmas">Christmas 🎄</option>
+                                                <option value="New Year">New Year 🎆</option>
+                                                <option value="Birthday">Birthday 🎂</option>
+                                                <option value="Thank You">Thank You 🙏</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>🎨 Card Style</label>
+                                            <select value={cardForm.card_style} onChange={(e) => setCardForm({...cardForm, card_style: e.target.value})}>
+                                                <option value="classic">Classic 🎭</option>
+                                                <option value="modern">Modern ✨</option>
+                                                <option value="cute">Cute 😊</option>
+                                                <option value="elegant">Elegant 💎</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>👤 To (Recipient)</label>
+                                            <input type="text" required value={cardForm.recipient_name}
+                                                onChange={(e) => setCardForm({...cardForm, recipient_name: e.target.value})}
+                                                placeholder="Sarah" />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>✍️ From (Your Name)</label>
+                                            <input type="text" required value={cardForm.sender_name}
+                                                onChange={(e) => setCardForm({...cardForm, sender_name: e.target.value})}
+                                                placeholder="John" />
+                                        </div>
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>👥 Relationship</label>
+                                            <select value={cardForm.relationship} onChange={(e) => setCardForm({...cardForm, relationship: e.target.value})}>
+                                                <option value="friend">Friend 👫</option>
+                                                <option value="family">Family 👪</option>
+                                                <option value="colleague">Colleague 👨‍💼</option>
+                                                <option value="partner">Partner 💕</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>🎭 Tone</label>
+                                            <select value={cardForm.tone} onChange={(e) => setCardForm({...cardForm, tone: e.target.value})}>
+                                                <option value="warm">Warm 🤗</option>
+                                                <option value="funny">Funny 😂</option>
+                                                <option value="formal">Formal 🎭</option>
+                                                <option value="heartfelt">Heartfelt 💕</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>📝 Custom Message (Optional)</label>
+                                        <textarea rows="3" value={cardForm.custom_message}
+                                            onChange={(e) => setCardForm({...cardForm, custom_message: e.target.value})}
+                                            placeholder="Any specific message you want to include..." />
+                                    </div>
+                                    <button type="submit" className="generate-btn" disabled={loading}>
+                                        {loading ? '🎨 Designing Card...' : '💌 Create Beautiful Card'}
+                                    </button>
+                                </form>
+                            </div>}
+                            {activeTab === 'santa' && <div className="card">
+                                <div className="card-header">
+                                    <div className="card-icon">🎅</div>
+                                    <div className="card-title">Secret Santa Generator</div>
+                                </div>
+                                <form onSubmit={handleSecretSanta}>
+                                    <div className="form-group">
+                                        <label>👥 Participant Names (one per line)</label>
+                                        <textarea 
+                                            rows="8" 
+                                            required 
+                                            value={santaForm.names}
+                                            onChange={(e) => setSantaForm({...santaForm, names: e.target.value})}
+                                            placeholder="John\nJane\nMike\nSarah\nAlex" 
+                                        />
+                                        <small style={{color: '#666', fontSize: '0.9em'}}>💡 Tip: You can also paste from Excel (copy column and paste here)</small>
+                                    </div>
+                                    <button type="submit" className="generate-btn" disabled={loading}>
+                                        {loading ? '🎲 Shuffling...' : '🎅 Generate Secret Santa'}
+                                    </button>
+                                </form>
+                            </div>}
+                            {activeTab === 'budget' && <div className="card">
+                                <div className="card-header">
+                                    <div className="card-icon">💰</div>
+                                    <div className="card-title">Smart Budget Tracker</div>
+                                </div>
+                                <div className="form-group">
+                                    <label>💵 Total Budget</label>
+                                    <input type="number" required value={budgetForm.total_budget}
+                                        onChange={(e) => setBudgetForm({...budgetForm, total_budget: e.target.value})}
+                                        placeholder="1000" />
+                                </div>
+                                <button onClick={addBudgetItem} className="generate-btn" style={{marginBottom: '20px'}}>
+                                    ➕ Add Budget Item
+                                </button>
+                                <div style={{maxHeight: '300px', overflowY: 'auto'}}>
+                                    {budgetForm.items.map((item, index) => (
+                                        <div key={index} style={{border: '1px solid #eee', padding: '15px', borderRadius: '10px', marginBottom: '10px'}}>
+                                            <div className="form-row">
+                                                <input placeholder="Item name" value={item.name || ''} 
+                                                    onChange={(e) => {
+                                                        const newItems = [...budgetForm.items];
+                                                        newItems[index] = {...newItems[index], name: e.target.value};
+                                                        setBudgetForm({...budgetForm, items: newItems});
+                                                    }} />
+                                                <select value={item.category || 'gifts'}
+                                                    onChange={(e) => {
+                                                        const newItems = [...budgetForm.items];
+                                                        newItems[index] = {...newItems[index], category: e.target.value};
+                                                        setBudgetForm({...budgetForm, items: newItems});
+                                                    }}>
+                                                    <option value="gifts">🎁 Gifts</option>
+                                                    <option value="food">🍽️ Food</option>
+                                                    <option value="decorations">🎄 Decorations</option>
+                                                    <option value="entertainment">🎵 Entertainment</option>
+                                                </select>
+                                            </div>
+                                            <div className="form-row" style={{marginTop: '10px'}}>
+                                                <input type="number" placeholder="Planned $" value={item.planned_amount || ''}
+                                                    onChange={(e) => {
+                                                        const newItems = [...budgetForm.items];
+                                                        newItems[index] = {...newItems[index], planned_amount: parseFloat(e.target.value) || 0};
+                                                        setBudgetForm({...budgetForm, items: newItems});
+                                                    }} />
+                                                <input type="number" placeholder="Actual $" value={item.actual_amount || ''}
+                                                    onChange={(e) => {
+                                                        const newItems = [...budgetForm.items];
+                                                        newItems[index] = {...newItems[index], actual_amount: parseFloat(e.target.value) || 0};
+                                                        setBudgetForm({...budgetForm, items: newItems});
+                                                    }} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={calculateBudget} className="generate-btn" disabled={loading}>
+                                    {loading ? '💰 Calculating...' : '📊 Calculate Budget'}
+                                </button>
                             </div>}
                             {activeTab === 'message' && <div className="card">
                                 <div className="card-header">
@@ -1154,6 +1723,168 @@
                                     <p>Subscribe for unlimited personalized messages!</p>
                                     <button className="subscribe-btn" onClick={() => handleSubscription()}>
                                         ✨ Subscribe for Unlimited Messages
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {!loading && santaResults.length > 0 && (
+                            <div className="card" style={{marginTop: '30px'}}>
+                                <h2 style={{marginBottom: '20px', color: '#d63031', textAlign: 'center'}}>🎅 Secret Santa Results</h2>
+                                <div className="gift-grid">
+                                    {santaResults.map((result, index) => (
+                                        <div key={index} className="gift-card">
+                                            <div className="gift-image" style={{height: '120px', fontSize: '3em'}}>🎁</div>
+                                            <div className="gift-content" style={{textAlign: 'center'}}>
+                                                <div className="gift-name">{result.giver}</div>
+                                                <div style={{fontSize: '2em', margin: '10px 0'}}>⬇️</div>
+                                                <div className="gift-description" style={{fontSize: '1.2em', fontWeight: '600', color: '#667eea'}}>
+                                                    Gives to: {result.receiver}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="share-container">
+                                    <button className="share-btn whatsapp" onClick={() => shareSantaResults('whatsapp')}>
+                                        <i className="fab fa-whatsapp"></i> WhatsApp
+                                    </button>
+                                    <button className="share-btn facebook" onClick={() => shareSantaResults('facebook')}>
+                                        <i className="fab fa-facebook"></i> Facebook
+                                    </button>
+                                    <button className="share-btn twitter" onClick={() => shareSantaResults('twitter')}>
+                                        <i className="fab fa-twitter"></i> Twitter
+                                    </button>
+                                    <button className="share-btn telegram" onClick={() => shareSantaResults('telegram')}>
+                                        <i className="fab fa-telegram"></i> Telegram
+                                    </button>
+                                    <button className="share-btn copy" onClick={() => shareSantaResults('copy')}>
+                                        <i className="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {!loading && wishlistData && (
+                            <div className="card" style={{marginTop: '30px'}}>
+                                <h2 style={{marginBottom: '20px', color: '#d63031', textAlign: 'center'}}>📋 {wishlistData.title}</h2>
+                                <div style={{background: 'linear-gradient(135deg, #ffecd2, #fcb69f)', padding: '20px', borderRadius: '15px', marginBottom: '20px'}}>
+                                    <h3>🎁 Wishlist Items:</h3>
+                                    <ul style={{listStyle: 'none', padding: 0}}>
+                                        {wishlistData.items.map((item, index) => (
+                                            <li key={index} style={{padding: '8px 0', fontSize: '1.1em'}}>
+                                                • {item}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div style={{background: 'rgba(102,126,234,0.1)', padding: '20px', borderRadius: '15px', marginBottom: '20px'}}>
+                                    <h3>🤖 AI Suggestions:</h3>
+                                    <div style={{whiteSpace: 'pre-line', lineHeight: '1.6'}}>{wishlistData.ai_suggestions}</div>
+                                </div>
+                                <div style={{textAlign: 'center', padding: '15px', background: 'rgba(240,147,251,0.1)', borderRadius: '10px'}}>
+                                    <strong>🔗 Share URL:</strong> {wishlistData.share_url}
+                                </div>
+                            </div>
+                        )}
+                        {!loading && cardContent && (
+                            <div className="card" style={{marginTop: '30px'}}>
+                                <h2 style={{marginBottom: '20px', color: '#d63031', textAlign: 'center'}}>💌 Your Beautiful Card</h2>
+                                <div style={{background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', padding: '30px', borderRadius: '20px', boxShadow: '0 15px 40px rgba(0,0,0,0.2)'}}>
+                                    <div style={{whiteSpace: 'pre-line', fontSize: '1.2em', lineHeight: '1.8', textAlign: 'center'}}>
+                                        {cardContent}
+                                    </div>
+                                </div>
+                                <div className="share-container">
+                                    <button className="share-btn whatsapp" onClick={() => {
+                                        const text = encodeURIComponent(`💌 Beautiful card created with AI Gift Genie:\n\n${cardContent}\n\n✨ Create yours at ai-gift-genie.onrender.com!`);
+                                        window.open(`https://wa.me/?text=${text}`, '_blank');
+                                    }}>
+                                        <i className="fab fa-whatsapp"></i> Share Card
+                                    </button>
+                                    <button className="share-btn copy" onClick={() => {
+                                        navigator.clipboard.writeText(cardContent);
+                                        alert('Card content copied! 📋');
+                                    }}>
+                                        <i className="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {!loading && generatedCaption && (
+                            <div className="message-card">
+                                <h2 style={{marginBottom: '20px', color: '#d63031'}}>📸 Your Perfect Caption</h2>
+                                <div className="message-text">{generatedCaption}</div>
+                                <div className="share-container">
+                                    <button className="share-btn copy" onClick={() => {
+                                        navigator.clipboard.writeText(generatedCaption);
+                                        alert('Caption copied! 📋');
+                                    }}>
+                                        <i className="fas fa-copy"></i> Copy Caption
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {!loading && budgetData && (
+                            <div className="card" style={{marginTop: '30px'}}>
+                                <h2 style={{marginBottom: '20px', color: '#d63031', textAlign: 'center'}}>💰 Budget Analysis</h2>
+                                <div className="gift-grid">
+                                    <div className="gift-card">
+                                        <div className="gift-image" style={{height: '120px', fontSize: '3em'}}>💵</div>
+                                        <div className="gift-content" style={{textAlign: 'center'}}>
+                                            <div className="gift-name">Total Budget</div>
+                                            <div className="gift-price">${budgetData.total_budget}</div>
+                                        </div>
+                                    </div>
+                                    <div className="gift-card">
+                                        <div className="gift-image" style={{height: '120px', fontSize: '3em'}}>📋</div>
+                                        <div className="gift-content" style={{textAlign: 'center'}}>
+                                            <div className="gift-name">Planned</div>
+                                            <div className="gift-price">${budgetData.total_planned}</div>
+                                        </div>
+                                    </div>
+                                    <div className="gift-card">
+                                        <div className="gift-image" style={{height: '120px', fontSize: '3em'}}>💸</div>
+                                        <div className="gift-content" style={{textAlign: 'center'}}>
+                                            <div className="gift-name">Spent</div>
+                                            <div className="gift-price" style={{color: budgetData.over_budget ? '#f5576c' : '#28a745'}}>
+                                                ${budgetData.total_spent}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="gift-card">
+                                        <div className="gift-image" style={{height: '120px', fontSize: '3em'}}>
+                                            {budgetData.remaining >= 0 ? '💰' : '⚠️'}
+                                        </div>
+                                        <div className="gift-content" style={{textAlign: 'center'}}>
+                                            <div className="gift-name">{budgetData.remaining >= 0 ? 'Remaining' : 'Over Budget'}</div>
+                                            <div className="gift-price" style={{color: budgetData.remaining >= 0 ? '#28a745' : '#f5576c'}}>
+                                                ${Math.abs(budgetData.remaining)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {budgetData.over_budget && (
+                                    <div style={{background: '#f5576c', color: 'white', padding: '15px', borderRadius: '10px', textAlign: 'center', marginTop: '20px'}}>
+                                        ⚠️ You're over budget! Consider adjusting your spending.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {!loading && partyPlan && (
+                            <div className="message-card">
+                                <h2 style={{marginBottom: '20px', color: '#d63031'}}>🎉 Your Party Plan</h2>
+                                <div style={{whiteSpace: 'pre-line', fontSize: '1.1em', lineHeight: '1.6'}}>{partyPlan}</div>
+                                <div className="share-container">
+                                    <button className="share-btn whatsapp" onClick={() => {
+                                        const text = encodeURIComponent(`🎉 Party plan created with AI Gift Genie:\n\n${partyPlan}\n\n✨ Create yours at ai-gift-genie.onrender.com!`);
+                                        window.open(`https://wa.me/?text=${text}`, '_blank');
+                                    }}>
+                                        <i className="fab fa-whatsapp"></i> Share Plan
+                                    </button>
+                                    <button className="share-btn copy" onClick={() => {
+                                        navigator.clipboard.writeText(partyPlan);
+                                        alert('Party plan copied! 📋');
+                                    }}>
+                                        <i className="fas fa-copy"></i> Copy
                                     </button>
                                 </div>
                             </div>
