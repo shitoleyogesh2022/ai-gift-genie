@@ -52,6 +52,18 @@ class MessageRequest(BaseModel):
     tone: str = "warm"
     gift_context: Optional[str] = None
     special_message: Optional[str] = None
+    is_premium: bool = False
+
+# Track free message usage (in production, use database)
+free_messages_used = 0
+MAX_FREE_MESSAGES = 3
+
+# Sample messages for free users
+SAMPLE_MESSAGES = [
+    "Wishing you a Christmas filled with joy, laughter, and all the warmth of the season! May your holidays sparkle with happiness and your New Year be bright with new possibilities. 🎄✨",
+    "May this Christmas bring you peace, love, and countless moments of joy with those who matter most. Here's to a wonderful holiday season and an amazing year ahead! 🎅🎁",
+    "Sending warm Christmas wishes your way! May your heart be light, your days be merry, and your celebrations be filled with love and laughter. Happy holidays! ❄️💕"
+]
 
 @app.get("/api")
 async def root():
@@ -63,6 +75,13 @@ async def serve_frontend():
     if frontend_path.exists():
         return FileResponse(frontend_path)
     return {"error": "Frontend not found"}
+
+@app.post("/reset-free-messages")
+async def reset_free_messages():
+    """Reset free message counter (for demo purposes)"""
+    global free_messages_used
+    free_messages_used = 0
+    return {"message": "Free messages reset", "free_messages_used": free_messages_used}
 
 @app.get("/list-models")
 async def list_models():
@@ -164,11 +183,36 @@ Format each gift clearly numbered 1-3."""
 
 @app.post("/generate-message")
 async def generate_message(request: MessageRequest):
+    global free_messages_used
     print(f"\n=== MESSAGE REQUEST RECEIVED ===")
     print(f"Recipient: {request.recipient_name}")
+    
     try:
-        print(f"Generating message for {request.recipient_name}...")
+        # Check if user has premium or if they've exceeded free limit
+        if not request.is_premium and free_messages_used >= MAX_FREE_MESSAGES:
+            return {
+                "message": None,
+                "recipient": request.recipient_name,
+                "requires_subscription": True,
+                "sample_messages": SAMPLE_MESSAGES,
+                "free_messages_used": free_messages_used,
+                "max_free_messages": MAX_FREE_MESSAGES
+            }
         
+        # For free users, return sample message
+        if not request.is_premium:
+            free_messages_used += 1
+            sample_message = SAMPLE_MESSAGES[min(free_messages_used - 1, len(SAMPLE_MESSAGES) - 1)]
+            return {
+                "message": sample_message,
+                "recipient": request.recipient_name,
+                "is_sample": True,
+                "free_messages_used": free_messages_used,
+                "max_free_messages": MAX_FREE_MESSAGES
+            }
+        
+        # Premium users get AI-generated messages
+        print(f"Generating AI message for {request.recipient_name}...")
         prompt = f"""Write a {request.tone} {request.occasion} message for {request.recipient_name}.
         
 Relationship: {request.relationship}
@@ -182,7 +226,7 @@ Write a warm, personal message (2-4 sentences). Just the message, no quotes."""
         message = response.text.strip().strip('"').strip("'")
         print(f"Message: {message[:100]}...")
         
-        return {"message": message, "recipient": request.recipient_name}
+        return {"message": message, "recipient": request.recipient_name, "is_premium": True}
         
     except Exception as e:
         print(f"ERROR: {str(e)}")
