@@ -92,7 +92,7 @@ async def generate_gifts(request: GiftRequest):
         currency_symbols = {'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥', 'AUD': 'A$', 'CAD': 'C$', 'CNY': '¥', 'AED': 'د.إ'}
         currency_symbol = currency_symbols.get(request.currency, '$')
         
-        prompt = f"""Generate 5 gift ideas for {request.recipient_name} for {request.occasion}.
+        prompt = f"""Generate 3 gift ideas for {request.recipient_name} for {request.occasion}.
 
 Details:
 - Age: {request.age or 'Not specified'}
@@ -110,7 +110,7 @@ For each gift, provide:
 5. Where to buy (consider location: {request.location or 'general'})
 
 IMPORTANT: All prices MUST be in {request.currency} currency using {currency_symbol} symbol.
-Format each gift clearly numbered 1-5."""
+Format each gift clearly numbered 1-3."""
         
         print("Calling Gemini API...")
         response = model.generate_content(prompt)
@@ -154,7 +154,7 @@ Format each gift clearly numbered 1-5."""
             gift.setdefault('where_to_buy', 'Online or local stores')
         
         print(f"Parsed {len(gifts)} gifts")
-        return {"gifts": gifts[:5], "recipient": request.recipient_name}
+        return {"gifts": gifts[:3], "recipient": request.recipient_name}
         
     except Exception as e:
         print(f"ERROR: {str(e)}")
