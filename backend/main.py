@@ -116,7 +116,8 @@ MAX_FREE_MESSAGES = 3
 
 # Sample messages for free users (dynamic year)
 def get_sample_messages():
-    next_year = datetime.now().year + 1
+    current_year = datetime.now().year
+    next_year = current_year + 1
     return [
         f"Wishing you a Christmas filled with joy, laughter, and all the warmth of the season! May your holidays sparkle with happiness and your {next_year} be bright with new possibilities. 🎄✨",
         f"May this Christmas bring you peace, love, and countless moments of joy with those who matter most. Here's to a wonderful holiday season and an amazing {next_year} ahead! 🎅🎁",
@@ -145,7 +146,21 @@ async def reset_free_messages():
 async def generate_party_plan(request: PartyPlannerRequest):
     print(f"\n=== PARTY PLANNER REQUEST ===")
     try:
+        current_year = datetime.now().year
+        next_year = current_year + 1
+        current_month = datetime.now().month
+        
+        if current_month == 12:
+            time_context = f"Current year: {current_year} (December), upcoming new year: {next_year}."
+        elif current_month == 1:
+            time_context = f"Current year: {current_year} (January), we just entered this new year from {current_year-1}."
+        else:
+            time_context = f"Current year: {current_year}, upcoming new year will be: {next_year}."
+        
         prompt = f"""Create a comprehensive {request.occasion} party plan for {request.guest_count} guests.
+        
+Timing context: {time_context}
+IMPORTANT: Use correct year references - we are currently in {current_year}, and the upcoming new year is {next_year}.
         
 Details:
         - Budget: ${request.budget or 'Flexible'}
@@ -202,9 +217,23 @@ async def track_budget(request: BudgetRequest):
 @app.post("/photo-caption")
 async def generate_caption(request: CaptionRequest):
     try:
+        current_year = datetime.now().year
+        next_year = current_year + 1
+        current_month = datetime.now().month
+        
+        if current_month == 12:
+            time_context = f"Current year: {current_year} (December), upcoming new year: {next_year}."
+        elif current_month == 1:
+            time_context = f"Current year: {current_year} (January), we just entered this new year from {current_year-1}."
+        else:
+            time_context = f"Current year: {current_year}, upcoming new year will be: {next_year}."
+        
         hashtag_prompt = "Include 5-8 relevant hashtags" if request.hashtags else "No hashtags"
         
         prompt = f"""Create a {request.tone} social media caption for a {request.occasion} photo.
+        
+Timing context: {time_context}
+IMPORTANT: Use correct year references - we are currently in {current_year}, and the upcoming new year is {next_year}.
         
 Photo description: {request.photo_description}
 Tone: {request.tone}
@@ -223,10 +252,24 @@ Make it engaging, shareable, and authentic. 1-2 sentences max."""
 @app.post("/create-wishlist")
 async def create_wishlist(request: WishlistRequest):
     try:
+        current_year = datetime.now().year
+        next_year = current_year + 1
+        current_month = datetime.now().month
+        
+        if current_month == 12:
+            time_context = f"Current year: {current_year} (December), upcoming new year: {next_year}."
+        elif current_month == 1:
+            time_context = f"Current year: {current_year} (January), we just entered this new year from {current_year-1}."
+        else:
+            time_context = f"Current year: {current_year}, upcoming new year will be: {next_year}."
+        
         wishlist_id = str(uuid.uuid4())[:8]
         
         # Generate smart suggestions based on items
         prompt = f"""Analyze this {request.occasion} wishlist for {request.recipient_name} and provide:
+        
+Timing context: {time_context}
+IMPORTANT: Use correct year references - we are currently in {current_year}, and the upcoming new year is {next_year}.
         1. 3 additional gift suggestions that complement the existing items
         2. Budget estimate for the wishlist
         3. Priority ranking of items (most wanted to least)
@@ -257,18 +300,31 @@ async def generate_card(request: CardRequest):
     print(f"From: {request.sender_name} To: {request.recipient_name}")
     print(f"Occasion: {request.occasion}, Style: {request.card_style}")
     try:
+        current_year = datetime.now().year
+        next_year = current_year + 1
+        current_month = datetime.now().month
+        
+        if current_month == 12:
+            time_context = f"Current year: {current_year} (December), upcoming new year: {next_year}."
+        elif current_month == 1:
+            time_context = f"Current year: {current_year} (January), we just entered this new year from {current_year-1}."
+        else:
+            time_context = f"Current year: {current_year}, upcoming new year will be: {next_year}."
+        
         prompt = f"""Create a beautiful {request.occasion} card message from {request.sender_name} to {request.recipient_name}.
         
 Relationship: {request.relationship}
 Tone: {request.tone}
 Card style: {request.card_style}
 Custom message: {request.custom_message or 'None'}
+Timing context: {time_context}
 
 Generate:
 1. Front cover text (short, catchy)
 2. Inside message (heartfelt, 2-3 sentences)
 3. Closing signature suggestion
 
+IMPORTANT: Use correct year references - we are currently in {current_year}, and the upcoming new year is {next_year}.
 Make it {request.tone} and appropriate for their {request.relationship} relationship."""
         
         print("Calling Gemini API for card...")

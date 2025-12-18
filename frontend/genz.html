@@ -655,7 +655,7 @@
     <div id="root"></div>
     <script type="text/babel">
         const { useState } = React;
-        const API_URL = 'https://ai-gift-genie.onrender.com';
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:8003' : 'https://ai-gift-genie.onrender.com';
 
         const giftEmojis = {
             'Technology': '💻', 'Reading': '📚', 'Sports': '⚽', 'Music': '🎵',
@@ -751,6 +751,19 @@
             });
             const [cardContent, setCardContent] = useState('');
             
+            // Clear outputs when switching tabs
+            const switchTab = (tab) => {
+                setActiveTab(tab);
+                setGifts([]);
+                setMessage('');
+                setSantaResults([]);
+                setPartyPlan('');
+                setBudgetData(null);
+                setGeneratedCaption('');
+                setWishlistData(null);
+                setCardContent('');
+            };
+            
             const currencies = {
                 'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥',
                 'AUD': 'A$', 'CAD': 'C$', 'CNY': '¥', 'AED': 'د.إ'
@@ -831,6 +844,7 @@
                     const names = santaForm.names.split('\n').map(n => n.trim()).filter(n => n);
                     if (names.length < 2) {
                         alert('Please enter at least 2 names');
+                        setLoading(false);
                         return;
                     }
                     
@@ -839,9 +853,16 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ names })
                     });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
                     const data = await response.json();
-                    setSantaResults(data.assignments);
+                    console.log('Santa response:', data);
+                    setSantaResults(data.assignments || []);
                 } catch (error) {
+                    console.error('Secret Santa error:', error);
                     alert('Error: ' + error.message);
                 } finally {
                     setLoading(false);
@@ -986,23 +1007,15 @@
                 setLoading(true);
                 setCardContent('');
                 try {
-                    console.log('Sending card request:', cardForm);
                     const response = await fetch(`${API_URL}/generate-card`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(cardForm)
                     });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
                     const data = await response.json();
-                    console.log('Card response:', data);
                     setCardContent(data.card_content);
                 } catch (error) {
-                    console.error('Card generation error:', error);
-                    alert('Error generating card: ' + error.message);
+                    alert('Error: ' + error.message);
                 } finally {
                     setLoading(false);
                 }
@@ -1095,42 +1108,42 @@
                         <div className="tabs-container">
                             <button 
                                 className={`tab-btn ${activeTab === 'gifts' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('gifts')}>
+                                onClick={() => switchTab('gifts')}>
                                 🎁 Gift Finder
                             </button>
                             <button 
                                 className={`tab-btn ${activeTab === 'message' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('message')}>
+                                onClick={() => switchTab('message')}>
                                 💌 Message Maker
                             </button>
                             <button 
                                 className={`tab-btn ${activeTab === 'santa' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('santa')}>
+                                onClick={() => switchTab('santa')}>
                                 🎅 Secret Santa
                             </button>
                             <button 
                                 className={`tab-btn ${activeTab === 'party' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('party')}>
+                                onClick={() => switchTab('party')}>
                                 🎉 Party Planner
                             </button>
                             <button 
                                 className={`tab-btn ${activeTab === 'budget' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('budget')}>
+                                onClick={() => switchTab('budget')}>
                                 💰 Budget Tracker
                             </button>
                             <button 
                                 className={`tab-btn ${activeTab === 'caption' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('caption')}>
+                                onClick={() => switchTab('caption')}>
                                 📸 Photo Captions
                             </button>
                             <button 
                                 className={`tab-btn ${activeTab === 'wishlist' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('wishlist')}>
+                                onClick={() => switchTab('wishlist')}>
                                 📋 Wishlist
                             </button>
                             <button 
                                 className={`tab-btn ${activeTab === 'card' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('card')}>
+                                onClick={() => switchTab('card')}>
                                 💌 Card Maker
                             </button>
                         </div>
@@ -1417,7 +1430,15 @@
                                                 <option value="Christmas">Christmas 🎄</option>
                                                 <option value="New Year">New Year 🎆</option>
                                                 <option value="Birthday">Birthday 🎂</option>
+                                                <option value="Wedding">Wedding 💒</option>
+                                                <option value="Anniversary">Anniversary 💕</option>
+                                                <option value="Graduation">Graduation 🎓</option>
+                                                <option value="Baby Shower">Baby Shower 👶</option>
+                                                <option value="Housewarming">Housewarming 🏠</option>
+                                                <option value="Retirement">Retirement 🎉</option>
+                                                <option value="Get Well Soon">Get Well Soon 🌸</option>
                                                 <option value="Thank You">Thank You 🙏</option>
+                                                <option value="Congratulations">Congratulations 🎊</option>
                                             </select>
                                         </div>
                                         <div className="form-group">
@@ -1788,14 +1809,43 @@
                         {!loading && cardContent && (
                             <div className="card" style={{marginTop: '30px'}}>
                                 <h2 style={{marginBottom: '20px', color: '#d63031', textAlign: 'center'}}>💌 Your Beautiful Card</h2>
-                                <div style={{background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', padding: '30px', borderRadius: '20px', boxShadow: '0 15px 40px rgba(0,0,0,0.2)'}}>
-                                    <div style={{whiteSpace: 'pre-line', fontSize: '1.2em', lineHeight: '1.8', textAlign: 'center'}}>
-                                        {cardContent}
+                                
+                                {/* Card Front */}
+                                <div style={{background: 'linear-gradient(135deg, #f093fb, #f5576c)', color: 'white', padding: '40px', borderRadius: '20px', boxShadow: '0 15px 40px rgba(0,0,0,0.2)', marginBottom: '20px', textAlign: 'center'}}>
+                                    <div style={{fontSize: '3em', marginBottom: '20px'}}>
+                                        {cardForm.occasion === 'Christmas' ? '🎄' : 
+                                         cardForm.occasion === 'New Year' ? '🎆' :
+                                         cardForm.occasion === 'Birthday' ? '🎂' :
+                                         cardForm.occasion === 'Wedding' ? '💒' :
+                                         cardForm.occasion === 'Anniversary' ? '💕' :
+                                         cardForm.occasion === 'Graduation' ? '🎓' :
+                                         cardForm.occasion === 'Baby Shower' ? '👶' :
+                                         cardForm.occasion === 'Housewarming' ? '🏠' :
+                                         cardForm.occasion === 'Retirement' ? '🎉' :
+                                         cardForm.occasion === 'Get Well Soon' ? '🌸' :
+                                         cardForm.occasion === 'Thank You' ? '🙏' : '🎊'}
+                                    </div>
+                                    <div style={{fontSize: '1.8em', fontWeight: 'bold', marginBottom: '10px'}}>
+                                        {cardContent.split('**1. Front Cover Text:**')[1]?.split('**2. Inside Message:**')[0]?.replace(/\*/g, '').trim() || `Happy ${cardForm.occasion}!`}
+                                    </div>
+                                    <div style={{fontSize: '1.2em', opacity: 0.9}}>
+                                        For {cardForm.recipient_name}
                                     </div>
                                 </div>
+                                
+                                {/* Card Inside */}
+                                <div style={{background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', padding: '40px', borderRadius: '20px', boxShadow: '0 15px 40px rgba(0,0,0,0.2)'}}>
+                                    <div style={{fontSize: '1.3em', lineHeight: '1.8', marginBottom: '30px'}}>
+                                        {cardContent.split('**2. Inside Message:**')[1]?.split('**3. Closing Signature Suggestion:**')[0]?.replace(/\*/g, '').trim() || cardContent}
+                                    </div>
+                                    <div style={{textAlign: 'right', fontSize: '1.2em', fontStyle: 'italic'}}>
+                                        {cardContent.split('**3. Closing Signature Suggestion:**')[1]?.replace(/\*/g, '').trim() || `Love, ${cardForm.sender_name}`}
+                                    </div>
+                                </div>
+                                
                                 <div className="share-container">
                                     <button className="share-btn whatsapp" onClick={() => {
-                                        const text = encodeURIComponent(`💌 Beautiful card created with AI Gift Genie:\n\n${cardContent}\n\n✨ Create yours at ai-gift-genie.onrender.com!`);
+                                        const text = encodeURIComponent(`💌 Beautiful ${cardForm.occasion} card created with AI Gift Genie:\n\n${cardContent}\n\n✨ Create yours at ai-gift-genie.onrender.com!`);
                                         window.open(`https://wa.me/?text=${text}`, '_blank');
                                     }}>
                                         <i className="fab fa-whatsapp"></i> Share Card
