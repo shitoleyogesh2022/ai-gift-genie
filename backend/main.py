@@ -202,20 +202,33 @@ async def generate_message(request: MessageRequest):
                 "max_free_messages": MAX_FREE_MESSAGES
             }
         
-        # For free users, return personalized sample message
+        # For free users, generate personalized message using AI but mark as sample
         if not request.is_premium:
             free_messages_used += 1
-            next_year = datetime.now().year + 1
             
-            # Create personalized sample based on user inputs
-            if request.tone == "funny":
-                sample_message = f"Ho ho ho {request.recipient_name}! 🎅 Hope your Christmas is merrier than Santa after milk and cookies, and may {next_year} bring you more joy than a kid in a candy store! 🍭🎄"
-            elif request.tone == "formal":
-                sample_message = f"Dear {request.recipient_name}, I extend my warmest wishes for a joyous Christmas celebration and a prosperous {next_year}. May this festive season bring you peace and happiness. 🎄✨"
-            elif request.tone == "heartfelt":
-                sample_message = f"My dear {request.recipient_name}, Christmas reminds me how grateful I am to have you in my life. Wishing you all the love and warmth this season brings, and a beautiful {next_year} ahead. 💕🎄"
-            else:  # warm
-                sample_message = f"Merry Christmas, {request.recipient_name}! 🎄 May your holidays be filled with love, laughter, and all your favorite things. Here's to an amazing {next_year} together! ✨"
+            # Generate actual personalized message for free users too
+            current_year = datetime.now().year
+            next_year = current_year + 1
+            current_month = datetime.now().month
+            
+            if current_month == 12:
+                time_context = f"Current year: {current_year} (December), upcoming new year: {next_year}. Christmas is here/approaching."
+            elif current_month == 1:
+                time_context = f"Current year: {current_year} (January), we just entered this new year from {current_year-1}."
+            else:
+                time_context = f"Current year: {current_year}, upcoming new year will be: {next_year}."
+            
+            prompt = f"""Write a {request.tone} {request.occasion} message for {request.recipient_name}.
+            
+Relationship: {request.relationship}
+Gift context: {request.gift_context or 'None'}
+Special note: {request.special_message or 'None'}
+Timing context: {time_context}
+
+IMPORTANT: Use correct year references - we are currently in {current_year}, and the upcoming new year is {next_year}. Write a warm, personal message (2-4 sentences). Just the message, no quotes."""
+            
+            response = model.generate_content(prompt)
+            sample_message = response.text.strip().strip('"').strip("'")
             
             return {
                 "message": sample_message,
@@ -232,12 +245,12 @@ async def generate_message(request: MessageRequest):
         current_month = datetime.now().month
         
         # Smart context based on timing
-        if current_month == 12:  # December
-            time_context = f"It's December {current_year}, Christmas is here/approaching, and {next_year} is just around the corner."
-        elif current_month == 1:  # January
-            time_context = f"It's January {current_year}, the new year has just begun, and we're reflecting on the holidays."
+        if current_month == 12:
+            time_context = f"Current year: {current_year} (December), upcoming new year: {next_year}. Christmas is here/approaching."
+        elif current_month == 1:
+            time_context = f"Current year: {current_year} (January), we just entered this new year from {current_year-1}."
         else:
-            time_context = f"It's {current_year}, and we're looking forward to the upcoming holiday season and {next_year}."
+            time_context = f"Current year: {current_year}, upcoming new year will be: {next_year}."
         
         prompt = f"""Write a {request.tone} {request.occasion} message for {request.recipient_name}.
         
@@ -246,7 +259,7 @@ Gift context: {request.gift_context or 'None'}
 Special note: {request.special_message or 'None'}
 Timing context: {time_context}
 
-Use appropriate tense and timing references. Write a warm, personal message (2-4 sentences). Just the message, no quotes."""
+IMPORTANT: Use correct year references - we are currently in {current_year}, and the upcoming new year is {next_year}. Write a warm, personal message (2-4 sentences). Just the message, no quotes."""
         
         print("Calling Gemini API...")
         response = model.generate_content(prompt)
