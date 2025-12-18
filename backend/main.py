@@ -202,11 +202,21 @@ async def generate_message(request: MessageRequest):
                 "max_free_messages": MAX_FREE_MESSAGES
             }
         
-        # For free users, return sample message
+        # For free users, return personalized sample message
         if not request.is_premium:
             free_messages_used += 1
-            sample_messages = get_sample_messages()
-            sample_message = sample_messages[min(free_messages_used - 1, len(sample_messages) - 1)]
+            next_year = datetime.now().year + 1
+            
+            # Create personalized sample based on user inputs
+            if request.tone == "funny":
+                sample_message = f"Ho ho ho {request.recipient_name}! 🎅 Hope your Christmas is merrier than Santa after milk and cookies, and may {next_year} bring you more joy than a kid in a candy store! 🍭🎄"
+            elif request.tone == "formal":
+                sample_message = f"Dear {request.recipient_name}, I extend my warmest wishes for a joyous Christmas celebration and a prosperous {next_year}. May this festive season bring you peace and happiness. 🎄✨"
+            elif request.tone == "heartfelt":
+                sample_message = f"My dear {request.recipient_name}, Christmas reminds me how grateful I am to have you in my life. Wishing you all the love and warmth this season brings, and a beautiful {next_year} ahead. 💕🎄"
+            else:  # warm
+                sample_message = f"Merry Christmas, {request.recipient_name}! 🎄 May your holidays be filled with love, laughter, and all your favorite things. Here's to an amazing {next_year} together! ✨"
+            
             return {
                 "message": sample_message,
                 "recipient": request.recipient_name,
